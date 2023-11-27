@@ -1,0 +1,94 @@
+version: '3.4'
+
+services:
+  Kali:
+    image: sadry/sadry:tp_pen_kali
+    container_name: kali
+    stdin_open: true
+    tty: true
+    ports:
+      - 9020:8080
+      - 9021:5900
+    networks:
+      - networkpentest
+  samba:
+    image: hichigari/samba
+    container_name: samba
+    networks:
+      - networkpentest
+    ports:
+      - "137:137/udp"
+      - "138:138/udp"
+      - "139:139/tcp"
+      - "445:445/tcp"
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+  nessus:
+    image: tenableofficial/nessus
+    restart: always
+    container_name: nessus
+    ports:
+      - 8834:8834
+    networks:
+      - networkpentest
+
+  wordpress:
+    build: .
+    ports:
+      - "31337:80"
+    environment:
+      WORDPRESS_DB_PASSWORD: password
+    volumes:
+      - "wp:/var/www/html:rw"
+  mysql:
+    image: "mysql:5.7"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - db:/var/lib/mysql
+  
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    ports:
+      - 31338:80
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql
+    depends_on:
+      - mysql
+  wp-cli:
+    image: "wordpress:cli-php7.1"
+    environment:
+      - APACHE_RUN_USER="www-data"
+      - APACHE_RUN_GROUP="www-data"
+    depends_on:
+      - "mysql"
+    volumes:
+      - "wp:/var/www/html:rw"
+      - "./bin/install-wp.sh:/usr/local/bin/install-wp:ro"
+
+  tomcat:
+    image: vulhub/tomcat:8.0
+    volumes:
+     - ./tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml
+     - ./context.xml:/usr/local/tomcat/webapps/manager/META-INF/context.xml
+     - ./context.xml:/usr/local/tomcat/webapps/host-manager/META-INF/context.xml
+    ports:
+     - "8080:8080"
+
+volumes:
+  wp: {}
+  db: {}
+
+networks:
+  networkpentest:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.30.0.0/16
