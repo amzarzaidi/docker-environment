@@ -10,12 +10,16 @@ services:
       - 9020:8080
       - 9021:5900
     networks:
-      - networkpentest
+      networkpentest:
+        ipv4_address: 172.20.0.10
+        
   samba:
+    ontainer_name: samba
     image: hichigari/samba
     container_name: samba
     networks:
-      - networkpentest
+      networkpentest:
+        ipv4_address: 172.20.0.11
     ports:
       - "137:137/udp"
       - "138:138/udp"
@@ -70,6 +74,10 @@ services:
 
   tomcat:
     image: vulhub/tomcat:8.0
+    volumes:
+    - ./tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml
+    - ./context.xml:/usr/local/tomcat/webapps/manager/META-INF/context.xml
+    - ./context.xml:/usr/local/tomcat/webapps/host-manager/META-INF/context.xml
     ports:
      - "8080:8080"
 
@@ -83,4 +91,4 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 172.30.0.0/16
+        - subnet: 172.16.0.0/16
