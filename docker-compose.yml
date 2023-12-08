@@ -39,7 +39,8 @@ services:
     ports:
       - 8834:8834
     networks:
-      - networkpentest
+      networkpentest:
+        ipv4_address: 172.20.0.12
 
   wordpress:
     build: .
@@ -80,6 +81,11 @@ services:
     - ./context.xml:/usr/local/tomcat/webapps/host-manager/META-INF/context.xml
     ports:
      - "8080:8080"
+     networks:
+      networkpentest:
+        ipv4_address: 172.20.0.13
+
+     
 
 volumes:
   wp: {}
