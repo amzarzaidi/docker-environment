@@ -1,5 +1,5 @@
-version: '3.4'
-
+---
+version: "3.4"
 services:
   Kali:
     image: sadry/sadry:tp_pen_kali
@@ -11,27 +11,25 @@ services:
       - 9021:5900
     networks:
       networkpentest:
-        ipv4_address: 172.20.0.10
-        
+        ipv4_address: 172.16.0.10
   samba:
-    ontainer_name: samba
-    image: hichigari/samba
     container_name: samba
+    image: hichigari/samba
     networks:
       networkpentest:
-        ipv4_address: 172.20.0.11
+        ipv4_address: 172.16.0.11
     ports:
-      - "137:137/udp"
-      - "138:138/udp"
-      - "139:139/tcp"
-      - "445:445/tcp"
+      - 1370:137/udp
+      - 1380:138/udp
+      - 1390:139/tcp
+      - 4450:445/tcp
     read_only: true
     tmpfs:
       - /tmp
     restart: unless-stopped
     stdin_open: true
     tty: true
-
+    
   nessus:
     image: tenableofficial/nessus
     restart: always
@@ -40,19 +38,17 @@ services:
       - 8834:8834
     networks:
       networkpentest:
-        ipv4_address: 172.20.0.12
-
+        ipv4_address: 172.16.0.12
   wordpress:
     build: .
     ports:
-      - "31337:80"
+      - 31337:80
   mysql:
-    image: "mysql:5.7"
+    image: mysql:5.7
     environment:
       MYSQL_ROOT_PASSWORD: password
     volumes:
       - db:/var/lib/mysql
-  
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     ports:
@@ -63,34 +59,67 @@ services:
     depends_on:
       - mysql
   wp-cli:
-    image: "wordpress:cli-php7.1"
+    image: wordpress:cli-php7.1
     environment:
       - APACHE_RUN_USER="www-data"
       - APACHE_RUN_GROUP="www-data"
     depends_on:
-      - "mysql"
+      - mysql
     volumes:
-      - "wp:/var/www/html:rw"
-      - "./bin/install-wp.sh:/usr/local/bin/install-wp:ro"
-
+      - wp:/var/www/html:rw
+      - ./bin/install-wp.sh:/usr/local/bin/install-wp:ro
+      
   tomcat:
     image: vulhub/tomcat:8.0
+    container_name: tomcat
     volumes:
-    - ./tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml
-    - ./context.xml:/usr/local/tomcat/webapps/manager/META-INF/context.xml
-    - ./context.xml:/usr/local/tomcat/webapps/host-manager/META-INF/context.xml
+      - ./tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml
+      - ./context.xml:/usr/local/tomcat/webapps/manager/META-INF/context.xml
+      - ./context.xml:/usr/local/tomcat/webapps/host-manager/META-INF/context.xml
     ports:
-     - "8080:8080"
-     networks:
+      - 8080:8080
+    networks:
       networkpentest:
-        ipv4_address: 172.20.0.13
-
-     
-
+        ipv4_address: 172.16.0.13
+        
+  dvwa_web:
+    container_name: dvwa
+    image: cytopia/dvwa:php-${PHP_VERSION:-8.1}
+    restart: unless-stopped
+    ports:
+      - ${LISTEN_PORT:-8000}:80
+    networks:
+      networkpentest:
+        ipv4_address: 172.16.0.14
+    environment:
+      - RECAPTCHA_PRIV_KEY=${RECAPTCHA_PRIV_KEY:-}
+      - RECAPTCHA_PUB_KEY=${RECAPTCHA_PUB_KEY:-}
+      - SECURITY_LEVEL=${SECURITY_LEVEL:-medium}
+      - PHPIDS_ENABLED=${PHPIDS_ENABLED:-0}
+      - PHPIDS_VERBOSE=${PHPIDS_VERBOSE:-0}
+      - PHP_DISPLAY_ERRORS=${PHP_DISPLAY_ERRORS:-0}
+      - MYSQL_HOSTNAME=dvwa_db
+      - MYSQL_DATABASE=dvwa
+      - MYSQL_USERNAME=dvwa
+      - MYSQL_PASSWORD=p@ssw0rd
+  dvwa_db:
+    image: mariadb:10.1
+    hostname: dvwa_db
+    volumes:
+      - dvwa_db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: dvwa
+      MYSQL_USER: dvwa
+      MYSQL_PASSWORD: p@ssw0rd
+    restart: unless-stopped
+    networks:
+      networkpentest:
+        ipv4_address: 172.16.0.15
 volumes:
   wp: {}
   db: {}
-
+  dvwa_db_data: null
 networks:
   networkpentest:
     driver: bridge
