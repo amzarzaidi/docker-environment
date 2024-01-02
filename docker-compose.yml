@@ -27,7 +27,6 @@ services:
     tmpfs:
       - /tmp
     restart: unless-stopped
-    stdin_open: true
     tty: true
     
   nessus:
